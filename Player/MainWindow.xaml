@@ -1,0 +1,250 @@
+<Window x:Class="SecureVideo.Player.MainWindow"
+  xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+  Title="" AutomationProperties.Name="加密视频播放器" Width="1120" Height="780" MinWidth="920" MinHeight="520"
+  Icon="Assets/app-icon.ico"
+  WindowStartupLocation="CenterScreen" Background="#0E1119" Foreground="#F1F3FF"
+  FontFamily="Segoe UI, Microsoft YaHei UI" FontSize="14"
+  UseLayoutRounding="True" SnapsToDevicePixels="True"
+  SourceInitialized="OnSourceInitialized" Closed="OnClosed" PreviewKeyDown="OnPlaybackKey"
+  PreviewMouseMove="OnPlaybackPointerActivity" PreviewMouseDown="OnPlaybackPointerActivity">
+  <Window.Resources>
+    <ResourceDictionary Source="Theme.xaml" />
+  </Window.Resources>
+  <Grid x:Name="LayoutRoot" Margin="24,0" Background="{StaticResource CanvasBrush}">
+    <Grid.RowDefinitions>
+      <RowDefinition Height="Auto" /><RowDefinition Height="*" /><RowDefinition Height="Auto" />
+    </Grid.RowDefinitions>
+
+    <DockPanel x:Name="Header" Height="72">
+      <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center">
+        <StackPanel x:Name="PlaylistActions" Orientation="Horizontal" Visibility="Collapsed" Margin="0,0,14,0">
+          <Button Content="添加视频" Click="OpenClick" Margin="0,0,6,0" />
+          <Button Content="加载文件夹" Click="LoadFolderClick" Margin="0,0,6,0" />
+          <Button Content="打开 ZIP" Click="OpenZipClick" />
+        </StackPanel>
+        <Border x:Name="ProtectionBadge" Background="#152A28" CornerRadius="15" Padding="10,6">
+          <StackPanel Orientation="Horizontal">
+            <Image Source="Assets/shield.png" Width="15" Height="15" Margin="0,0,6,0" />
+            <TextBlock x:Name="Protection" FontSize="12" Foreground="{StaticResource SuccessBrush}" VerticalAlignment="Center" />
+          </StackPanel>
+        </Border>
+        <StackPanel x:Name="RoleBadge" Orientation="Horizontal" Visibility="Collapsed" Margin="20,0,20,0" VerticalAlignment="Center">
+          <Image Source="Assets/user.png" Width="16" Height="16" Margin="0,0,7,0" />
+          <TextBlock x:Name="RoleName" Foreground="{StaticResource MutedBrush}" FontSize="13" />
+        </StackPanel>
+        <Button x:Name="LogoutButton" Tag="Assets/logout.png" Content="退出登录" Click="LogoutClick" Visibility="Collapsed" />
+      </StackPanel>
+      <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+        <Image Source="Assets/app-icon.png" Width="38" Height="38" RenderOptions.BitmapScalingMode="HighQuality" />
+        <TextBlock Text="加密视频播放器" FontSize="18" FontWeight="SemiBold" Margin="12,0,0,0" VerticalAlignment="Center" />
+      </StackPanel>
+    </DockPanel>
+
+    <Grid Grid.Row="1">
+      <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+      <Border Background="{StaticResource SurfaceBrush}" BorderBrush="{StaticResource LineBrush}" BorderThickness="1" CornerRadius="16" SizeChanged="PlayerCardSizeChanged">
+        <Grid>
+          <Grid.RowDefinitions><RowDefinition Height="*" /><RowDefinition Height="Auto" /></Grid.RowDefinitions>
+          <Border x:Name="VideoArea" Background="#0A0E18" ClipToBounds="True" MouseLeftButtonDown="VideoClick">
+            <Grid>
+              <Grid x:Name="BackdropLayer">
+                <Grid.Background>
+                  <RadialGradientBrush RadiusX=".5" RadiusY=".5">
+                    <GradientStop Offset="0" Color="#21254D" />
+                    <GradientStop Offset=".43" Color="#141B34" />
+                    <GradientStop Offset="1" Color="#0A0E18" />
+                  </RadialGradientBrush>
+                </Grid.Background>
+                <Image x:Name="Backdrop" Source="Assets/login-grid.png" Stretch="Fill" />
+              </Grid>
+              <Image x:Name="Screen" Stretch="Uniform" RenderOptions.BitmapScalingMode="LowQuality" />
+              <StackPanel x:Name="VideoPrompt" HorizontalAlignment="Center" VerticalAlignment="Center">
+                <Border x:Name="PromptTile" Width="92" Height="92" CornerRadius="24" Background="{StaticResource ControlBrush}"
+                  BorderBrush="{StaticResource AccentBrush}" BorderThickness="1" HorizontalAlignment="Center" Margin="0,0,0,22">
+                  <Image x:Name="PromptIcon" Source="Assets/locked.png" Width="48" Height="48" />
+                </Border>
+                <TextBlock x:Name="EmptyHint" Text="登录后打开视频" HorizontalAlignment="Center" FontSize="24" FontWeight="SemiBold" />
+                <TextBlock x:Name="FormatHint" Text="支持本地 MP4、MKV 和加密 .svideo 文件" Foreground="{StaticResource MutedBrush}"
+                  HorizontalAlignment="Center" TextAlignment="Center" TextWrapping="Wrap" Margin="16,10,16,0" />
+                <Button x:Name="PromptOpen" Content="打开视频" Style="{StaticResource PrimaryButton}" MinWidth="128"
+                  HorizontalAlignment="Center" Margin="0,14,0,0" Visibility="Collapsed" Click="OpenClick" />
+              </StackPanel>
+              <Border x:Name="FileBadge" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="18" Padding="12,8"
+                Background="#DD0E1119" CornerRadius="8" Visibility="Collapsed">
+                <StackPanel Orientation="Horizontal">
+                  <Image Source="Assets/file.png" Width="15" Height="15" Margin="0,0,7,0" />
+                  <TextBlock x:Name="FileNameLabel" MaxWidth="255" TextTrimming="CharacterEllipsis" FontSize="13" />
+                </StackPanel>
+              </Border>
+            </Grid>
+          </Border>
+          <Border x:Name="PlaybackControls" Grid.Row="1" Visibility="Collapsed" VerticalAlignment="Bottom"
+            Background="{StaticResource SurfaceBrush}" Padding="15,11,15,15">
+          <StackPanel>
+            <Grid Margin="0,0,0,8">
+              <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+              <Slider x:Name="Progress" Minimum="0" Maximum="1" IsEnabled="False" Margin="0,0,14,0"
+                IsMoveToPointEnabled="True" AutomationProperties.Name="播放进度"
+                PreviewMouseLeftButtonDown="SeekStart" PreviewMouseLeftButtonUp="SeekEnd" ValueChanged="SeekChanged" />
+              <TextBlock x:Name="Time" Grid.Column="1" Text="00:00 / 00:00" FontFamily="Consolas" FontSize="13"
+                Foreground="{StaticResource MutedBrush}" VerticalAlignment="Center" />
+            </Grid>
+            <DockPanel LastChildFill="False">
+              <Button x:Name="OpenButton" DockPanel.Dock="Right" Tag="Assets/open.png" ToolTip="Ctrl+O" Content="打开视频"
+                Click="OpenClick" IsEnabled="False" Margin="8,0,0,4" />
+              <WrapPanel>
+                <Button x:Name="PauseButton" Tag="Assets/pause-disabled.png" Content="暂停" ToolTip="空格 / K"
+                  Click="PauseClick" IsEnabled="False" Margin="0,0,8,4" />
+                <Button x:Name="StopButton" Tag="Assets/stop-disabled.png" Content="停止" ToolTip="S"
+                  Click="StopClick" IsEnabled="False" Margin="0,0,10,4" />
+                <CheckBox x:Name="Loop" Content="循环" VerticalAlignment="Center" Margin="0,0,12,4"
+                  Checked="LoopChanged" Unchecked="LoopChanged" />
+                <ComboBox x:Name="Speed" Width="78" Height="38" Margin="0,0,8,4" AutomationProperties.Name="播放倍速"
+                  ToolTip="播放倍速（[ / ] 调整，R 恢复）" SelectionChanged="SpeedChanged" />
+                <Button x:Name="MuteButton" Content="静音" ToolTip="M" Click="MuteClick" Margin="0,0,8,4" />
+                <Slider x:Name="Volume" Width="72" Minimum="0" Maximum="100" Value="100" VerticalAlignment="Center"
+                  Margin="0,0,10,4" AutomationProperties.Name="音量" ToolTip="↑ / ↓ 调整音量" ValueChanged="VolumeChanged" />
+                <Button x:Name="FullscreenButton" Content="全屏" ToolTip="F / F11" IsEnabled="False"
+                  Click="FullscreenClick" Margin="0,0,0,4" />
+              </WrapPanel>
+            </DockPanel>
+          </StackPanel>
+          </Border>
+        </Grid>
+      </Border>
+
+      <Border x:Name="LoginPanel" Grid.Column="1" Width="398" Margin="18,0,0,0" CornerRadius="16" Padding="40,16"
+        Background="{StaticResource SurfaceBrush}" BorderBrush="{StaticResource LineBrush}" BorderThickness="1">
+        <ScrollViewer VerticalScrollBarVisibility="Auto" VerticalAlignment="Center">
+          <StackPanel>
+            <TextBlock Text="登录播放器" FontSize="28" FontWeight="SemiBold" />
+            <TextBlock Text="使用分配给你的账号登录。" Foreground="{StaticResource MutedBrush}" Margin="0,6,0,36" />
+            <Label Content="账号" Target="{Binding ElementName=Account}" />
+            <TextBox x:Name="Account" MaxLength="100" Height="44" Margin="0,0,0,20" />
+            <Label Content="密码" Target="{Binding ElementName=Password}" />
+            <PasswordBox x:Name="Password" MaxLength="256" Height="44" Margin="0,0,0,22" />
+            <Button x:Name="LoginButton" Content="登录" Style="{StaticResource PrimaryButton}" Height="46"
+              IsDefault="True" Click="LoginClick" IsEnabled="False" />
+          </StackPanel>
+        </ScrollViewer>
+      </Border>
+
+      <Grid x:Name="SidePanels" Grid.Column="1" Width="338" Margin="18,0,0,0" Visibility="Collapsed">
+        <Grid.RowDefinitions>
+          <RowDefinition x:Name="PlaylistRow" Height="0" />
+          <RowDefinition x:Name="AdminRow" Height="*" />
+        </Grid.RowDefinitions>
+        <Border x:Name="PlaylistPanel" Visibility="Collapsed" Padding="14" CornerRadius="16"
+          Background="{StaticResource SurfaceBrush}" BorderBrush="{StaticResource LineBrush}" BorderThickness="1">
+          <Grid>
+            <Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="*" /><RowDefinition Height="Auto" /></Grid.RowDefinitions>
+            <DockPanel Margin="0,0,0,10">
+              <TextBlock x:Name="PlaylistCount" DockPanel.Dock="Right" Foreground="{StaticResource MutedBrush}" VerticalAlignment="Center" />
+              <TextBlock Text="播放列表" FontSize="18" FontWeight="SemiBold" />
+            </DockPanel>
+            <ListBox x:Name="PlaylistList" Grid.Row="1" Background="{StaticResource InputBrush}"
+              BorderBrush="{StaticResource LineBrush}" Padding="3" AutomationProperties.Name="播放列表"
+              ScrollViewer.HorizontalScrollBarVisibility="Auto" ScrollViewer.VerticalScrollBarVisibility="Auto"
+              ScrollViewer.CanContentScroll="True" VirtualizingPanel.VirtualizationMode="Recycling"
+              MouseDoubleClick="PlaylistDoubleClick" KeyDown="PlaylistKeyDown" SelectionChanged="PlaylistSelectionChanged">
+              <ListBox.ItemContainerStyle>
+                <Style TargetType="ListBoxItem">
+                  <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                  <Setter Property="Template">
+                    <Setter.Value>
+                      <ControlTemplate TargetType="ListBoxItem">
+                        <Border x:Name="Row" Background="Transparent" CornerRadius="7" Padding="8,6">
+                          <ContentPresenter />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                          <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="Row" Property="Background" Value="{StaticResource ControlBrush}" />
+                          </Trigger>
+                          <Trigger Property="IsSelected" Value="True">
+                            <Setter TargetName="Row" Property="Background" Value="{StaticResource LineBrush}" />
+                          </Trigger>
+                        </ControlTemplate.Triggers>
+                      </ControlTemplate>
+                    </Setter.Value>
+                  </Setter>
+                </Style>
+              </ListBox.ItemContainerStyle>
+              <ListBox.ItemTemplate>
+                <DataTemplate>
+                  <StackPanel ToolTip="{Binding Location}">
+                    <TextBlock Text="{Binding FileName}" FontSize="13" />
+                    <TextBlock Text="{Binding Location}" FontSize="11" Foreground="{StaticResource MutedBrush}" Margin="0,3,0,0" />
+                  </StackPanel>
+                </DataTemplate>
+              </ListBox.ItemTemplate>
+            </ListBox>
+            <Button x:Name="PlaylistPlayButton" Grid.Row="2" Content="播放所选视频" Click="PlaylistPlayClick"
+              Style="{StaticResource PrimaryButton}" IsEnabled="False" Margin="0,9,0,0" />
+          </Grid>
+        </Border>
+        <Border x:Name="AdminPanel" Grid.Row="1" Visibility="Collapsed"
+        CornerRadius="16" Padding="20,14" Background="{StaticResource SurfaceBrush}" BorderBrush="{StaticResource LineBrush}" BorderThickness="1">
+        <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+          <StackPanel>
+            <StackPanel Orientation="Horizontal">
+              <Border Background="{StaticResource ControlBrush}" Width="36" Height="36" CornerRadius="8">
+                <Image Source="Assets/admin.png" Width="18" Height="18" />
+              </Border>
+              <TextBlock Text="管理员工具" FontSize="18" FontWeight="SemiBold" Margin="10,0,0,0" VerticalAlignment="Center" />
+            </StackPanel>
+            <Border Height="1" Background="{StaticResource LineBrush}" Margin="0,10,0,10" />
+            <TextBlock Text="视频文件" FontWeight="SemiBold" Margin="0,0,0,6" />
+            <UniformGrid Columns="2" Margin="0,0,0,8">
+              <Button Content="加密视频" Tag="Assets/encrypt.png" Click="EncryptClick" Margin="0,0,4,0" />
+              <Button Content="解密并导出" Tag="Assets/export.png" Click="ExportClick" Margin="4,0,0,0" />
+            </UniformGrid>
+            <TextBlock Text="加密输出文件夹" FontSize="12" Foreground="{StaticResource MutedBrush}" Margin="0,0,0,5" />
+            <Grid Margin="0,0,0,6">
+              <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+              <Border Background="{StaticResource InputBrush}" BorderBrush="{StaticResource LineBrush}" BorderThickness="1" CornerRadius="8" Padding="9,0">
+                <TextBlock x:Name="OutputFolderLabel" TextTrimming="CharacterEllipsis" FontSize="12" VerticalAlignment="Center" />
+              </Border>
+              <Button Grid.Column="1" Content="选择" Padding="8,4" Click="ChooseOutputFolderClick" Margin="6,0,0,0" />
+              <Button Grid.Column="2" Content="默认" Padding="8,4" Click="ResetOutputFolderClick" Margin="6,0,0,0" />
+            </Grid>
+            <TextBlock Text="加密文件沿用原名，扩展名为 .svideo。" FontSize="12" Foreground="{StaticResource MutedBrush}" TextWrapping="Wrap" />
+            <Border Height="1" Background="{StaticResource LineBrush}" Margin="0,10,0,10" />
+            <TextBlock Text="成员与授权" FontWeight="SemiBold" Margin="0,0,0,10" />
+            <Label Content="成员账号" Target="{Binding ElementName=MemberAccount}" />
+            <TextBox x:Name="MemberAccount" MaxLength="100" MinHeight="34" Margin="0,0,0,7" />
+            <Label Content="初始密码" Target="{Binding ElementName=MemberPassword}" />
+            <PasswordBox x:Name="MemberPassword" MaxLength="256" MinHeight="34" Margin="0,0,0,7" ToolTip="创建成员时填写，至少 3 个字符" />
+            <Grid Margin="0,0,0,10">
+              <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="10" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
+              <StackPanel>
+                <Label Content="账号有效期（天）" Target="{Binding ElementName=MemberDays}" />
+                <TextBox x:Name="MemberDays" MinHeight="34" Text="365" MaxLength="4" ToolTip="1–3650 天" />
+              </StackPanel>
+              <StackPanel Grid.Column="2">
+                <Label Content="设备上限" Target="{Binding ElementName=MemberDevices}" />
+                <TextBox x:Name="MemberDevices" MinHeight="34" Text="1" MaxLength="2" ToolTip="1–20 台" />
+              </StackPanel>
+            </Grid>
+            <CheckBox x:Name="MemberOffline" Content="允许加密视频离线播放" IsChecked="True" Margin="0,0,0,8" />
+            <Label Content="单个视频授权（天，可留空）" Target="{Binding ElementName=MediaDays}" />
+            <TextBox x:Name="MediaDays" MaxLength="4" MinHeight="34" Margin="0,0,0,8" ToolTip="留空时，授权随成员账号有效期" />
+            <Grid>
+              <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="8" /><ColumnDefinition Width="1.25*" /></Grid.ColumnDefinitions>
+              <Button Content="创建成员" Click="CreateMemberClick" />
+              <Button Grid.Column="2" Content="授权成员播放" Style="{StaticResource PrimaryButton}" Click="AssignClick" />
+            </Grid>
+
+          </StackPanel>
+        </ScrollViewer>
+        </Border>
+      </Grid>
+    </Grid>
+
+    <DockPanel x:Name="Footer" Grid.Row="2" MinHeight="42" VerticalAlignment="Center">
+      <Image x:Name="StatusIcon" Source="Assets/info.png" Width="15" Height="15" Margin="0,0,8,0" />
+      <TextBlock x:Name="Status" Text="等待登录" Foreground="{StaticResource MutedBrush}" FontSize="12"
+        VerticalAlignment="Center" TextTrimming="CharacterEllipsis" ToolTip="{Binding Text, RelativeSource={RelativeSource Self}}" />
+    </DockPanel>
+  </Grid>
+</Window>

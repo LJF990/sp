@@ -1,0 +1,9 @@
+**/bin/
+**/obj/
+.vs/
+artifacts/
+**/ffmpeg/
+*.svideo
+*.partial
+Player/player.json
+*.pfx

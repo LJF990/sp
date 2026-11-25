@@ -1,0 +1,12 @@
+<Obfuscator>
+  <Var name="InPath" value="artifacts/windows-installer-payload" />
+  <Var name="OutPath" value="artifacts/windows-installer-obfuscated" />
+  <Var name="KeepPublicApi" value="true" />
+  <Var name="HideStrings" value="true" />
+  <Module file="artifacts/windows-installer-payload/Player.dll">
+    <SkipType name="SecureVideo.Player.App" skipMethods="true" skipFields="true" skipProperties="true" skipEvents="true" />
+    <SkipType name="SecureVideo.Player.MainWindow" skipMethods="true" skipFields="true" skipProperties="true" skipEvents="true" />
+    <SkipType name="SecureVideo.Player.PlayerConfig" skipMethods="true" skipFields="true" skipProperties="true" skipEvents="true" />
+    <SkipType name="*CachedLogin" skipMethods="true" skipFields="true" skipProperties="true" skipEvents="true" />
+  </Module>
+</Obfuscator>
